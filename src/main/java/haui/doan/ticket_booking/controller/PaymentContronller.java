@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -168,9 +167,15 @@ public class PaymentContronller {
 
     @PostMapping("/receive-hook")
     public ResponseEntity<Map<String, Object>> receiveWebhook(@RequestBody Map<String, Object> requestBody) {
+        System.out.println("Received webhook: " + requestBody);
         Map<String, Object> data = (Map<String, Object>) requestBody.get("data");
         String desc = (String) requestBody.get("desc");
         int orderCode = (Integer) data.get("orderCode");
+        String code = (String) requestBody.get("code");
+        System.out.println(code);
+        if (code.equals("00")) {
+            return ResponseEntity.ok(Map.of("message", "Webhook processed successfully"));
+        }
         Booking booking = bookingService.getBookingById(orderCode);
         if (booking == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
@@ -183,7 +188,6 @@ public class PaymentContronller {
             bookingService.deleteBooking(orderCode);
             System.out.println("Booking deleted successfully");
         }
-        System.out.println("Received webhook: " + requestBody);
         return ResponseEntity.ok(Map.of("message", "Webhook processed successfully"));
     }
 

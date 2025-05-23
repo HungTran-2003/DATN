@@ -51,9 +51,12 @@ public class BookingService {
         System.out.println("hii");
 
         if (couponCode != null) {
-            System.out.println("hii2");
             coupon = couponRepository.findByCode(couponCode)
                     .orElseThrow(() -> new RuntimeException("Coupon not found"));
+            int numberTicketUsed = userCouponRepository.countCouponUsed(coupon);
+            if (numberTicketUsed == coupon.getAmount()) {
+                new RuntimeException("Vé đã được sử dụng hết");
+            }
             UserCoupon userCoupon = new UserCoupon();
             userCoupon.setUser(user);
             userCoupon.setCoupon(coupon);

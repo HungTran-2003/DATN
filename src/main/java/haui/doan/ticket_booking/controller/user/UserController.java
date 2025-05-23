@@ -114,7 +114,7 @@ public class UserController {
     }
     
     @PostMapping("/change-password")
-    public ResponseEntity<?> postMethodName(@RequestParam("userId") Integer userId,
+    public ResponseEntity<?> changePassword(@RequestParam("userId") Integer userId,
                                             @RequestParam("newPassword") String newPassword) {
         try {
             User user = userService.changePassword(userId, newPassword);
@@ -133,7 +133,7 @@ public class UserController {
     }
 
     @GetMapping("/comfirm-password")
-    public ResponseEntity<?> getMethodName(@RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> comfirmPassword(@RequestBody Map<String, Object> body) {
         try {
             String password = (String) body.get("password");
             Integer userId = (Integer) body.get("userId");
@@ -153,9 +153,46 @@ public class UserController {
     }
 
     @GetMapping("/email")
-    public Integer getMethodName(@RequestParam String email) {
+    public Integer getIdByEmail(@RequestParam String email) {
         return userService.getUserbyEmail(email).getUserId();
     }
+    
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfileUser(@RequestParam Integer userId) {
+        try {
+            UserDTO reponsi = userService.getProfile(userId);
+            if (reponsi == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Không tim thấy tài khoản");
+            }
+            return ResponseEntity.ok(reponsi);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/update-profile")
+    public ResponseEntity<?> getMethodName(@RequestBody UserDTO userDTO) {
+        try {
+            User reponsi = userService.updateProfile(userDTO);
+            if (reponsi == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Cập nhật tài khoản không thành công");
+            }
+            return ResponseEntity.ok("Cập nhật tài khoản thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     
     
     

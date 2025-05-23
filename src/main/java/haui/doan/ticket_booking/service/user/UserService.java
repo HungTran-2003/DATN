@@ -127,4 +127,18 @@ public class UserService {
     public User getUserbyEmail(String email){
         return userRepository.findByEmail(email).get();
     }
+
+    public UserDTO getProfile(Integer userId){
+        return new UserDTO(userRepository.findById(userId).get());
+    }
+
+    public User updateProfile(UserDTO userDTO){
+        User user = userRepository.findById(userDTO.getUserId())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setEmail(userDTO.getEmail());
+        user.setPhoneNumber(userDTO.getPhoneNumber());
+
+        return userRepository.save(user);
+    }
 }
