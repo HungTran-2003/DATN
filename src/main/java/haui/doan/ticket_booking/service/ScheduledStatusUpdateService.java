@@ -1,9 +1,11 @@
 package haui.doan.ticket_booking.service;
 
 import haui.doan.ticket_booking.model.ShowTime;
+import haui.doan.ticket_booking.model.Booking;
 import haui.doan.ticket_booking.model.Movie;
 import haui.doan.ticket_booking.model.Ticket;
 import haui.doan.ticket_booking.repository.ShowTimeRepository;
+import haui.doan.ticket_booking.repository.BookingRepository;
 import haui.doan.ticket_booking.repository.MovieRepository;
 import haui.doan.ticket_booking.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +27,12 @@ public class ScheduledStatusUpdateService {
     private MovieRepository movieRepository;
 
     @Autowired
-    private TicketRepository ticketRepository;    @PostConstruct
+    private TicketRepository ticketRepository;  
+    
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    @PostConstruct
     @Transactional
     public void checkStatusOnStartup() {
         Date currentTime = new Date();
@@ -76,7 +83,7 @@ public class ScheduledStatusUpdateService {
                 && currentTime.after(showTime.getEndTime())) {
                 showTime.setStatus(ShowTime.Status.FINISHED_SHOWING);
                 showTimeRepository.save(showTime);
-                
+
                 // Update tickets to USED when showtime ends
                 List<Ticket> expiredTickets = ticketRepository.findExpiredUnusedTickets(currentTime);
                 for (Ticket ticket : expiredTickets) {

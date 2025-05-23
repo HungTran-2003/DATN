@@ -51,7 +51,8 @@ public class SecurityConfig {
                     "/api/otp/verify-otp",
                     "/api/images/**",
                     "/api/movies/detail/{movieId}",
-                    "/payment/receive-hook"
+                    "/payment/receive-hook",
+                    "/api/users/email"
                 ).permitAll()
                 .requestMatchers("/api/movie/add", 
                                  "/api/movie/simple",

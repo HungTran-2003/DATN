@@ -28,9 +28,13 @@ public class OtpService {
 
         OtpData otpData = new OtpData(otp, LocalDateTime.now());
         otpStorage.put(email, otpData);
+        System.out.println(email);
+        System.out.println(otp);
 
-        // Tự động xóa OTP sau 1 phút
+
+        // Tự động xóa OTP sau 5 phút
         scheduler.schedule(() -> otpStorage.remove(email), 5, TimeUnit.MINUTES);
+        System.out.println(otpStorage.get(email).getOtp());
 
         // Gửi email ở đây (gọi mailService.sendOtpMail(email, otp);)
         try {
@@ -42,6 +46,8 @@ public class OtpService {
 
     public boolean verifyOtp(String email, String inputOtp) {
         OtpData otpData = otpStorage.get(email);
+        System.out.println(email);
+
         System.out.println("OTP data: " + otpData.getOtp());
 
         // Kiểm tra hạn sử dụng OTP (phòng trường hợp scheduler chưa kịp xóa)

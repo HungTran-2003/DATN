@@ -32,4 +32,10 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
            "WHERE b.paymentStatus = 'PAID' AND b.user = :user " +
            "AND EXISTS (SELECT 1 FROM Ticket t2 WHERE t2.booking = b AND t2.ticketStatus = 'USED')")
     List<Booking> findPaidBookingsWithUsedTickets(User user);
+
+    @Query("SELECT b FROM Booking b " +
+           "LEFT JOIN b.showTime st " +
+           "WHERE st.endTime > CURRENT_DATE AND b.user = :user ")
+    List<Booking> findBookingNotShowing(User user);       
+
 }

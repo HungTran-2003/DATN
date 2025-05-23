@@ -107,4 +107,24 @@ public class UserService {
             .map(UserDTO::new)
             .toList();
     }
+
+    public User changePassword(Integer userId, String newPassword) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        return userRepository.save(user);
+    }
+
+    public Boolean comfirmPassword(Integer userId, String password){
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        if (passwordEncoder.matches(password, user.getPasswordHash())) {
+            return true;
+        } 
+        return false;
+    }
+
+    public User getUserbyEmail(String email){
+        return userRepository.findByEmail(email).get();
+    }
 }

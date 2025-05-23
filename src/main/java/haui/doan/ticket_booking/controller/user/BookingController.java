@@ -65,4 +65,37 @@ public class BookingController {
                     .body("Error fetching bookings: " + e.getMessage());
         }
     }
+
+    @GetMapping("/getBookingNotShowing/{userId}")
+    public ResponseEntity<?> getBookingNotShowing(@PathVariable Integer userId) {
+        try {
+            return ResponseEntity.ok(bookingService.findBookingNotShowing(userId));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching bookings: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/deleterac")
+    public ResponseEntity<?> deleterac() {
+        try {
+            bookingService.deleterac();
+            return ResponseEntity.ok("ok");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching bookings: " + e.getMessage());
+        }
+    } 
+
+    @DeleteMapping("{bookingId}")
+    public ResponseEntity<?> delete(@PathVariable Integer bookingId) {
+        try {
+            bookingService.deleteBooking(bookingId);
+            return ResponseEntity.ok("ok");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching bookings: " + e.getMessage());
+        }
+    } 
+
 }

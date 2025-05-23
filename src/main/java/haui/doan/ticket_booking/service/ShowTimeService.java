@@ -2,6 +2,7 @@ package haui.doan.ticket_booking.service;
 
 import haui.doan.ticket_booking.DTO.ShowTimeDTO;
 import haui.doan.ticket_booking.model.Hall;
+import haui.doan.ticket_booking.model.Movie;
 import haui.doan.ticket_booking.model.Seat;
 import haui.doan.ticket_booking.model.ShowTime;
 import haui.doan.ticket_booking.model.ShowTime.Status;
@@ -72,13 +73,16 @@ public class ShowTimeService {
         showTime.setEndTime(endTime);
         showTime.setDate(showDate);
         showTime.setTicketPrice(new BigDecimal(showTimeDTO.getPrice()));
-        showTime.setStatus(Status.COMING_SOON);
         showTime.setMaxTicket(showTimeDTO.getMaxTicket());
-        
-        showTime.setMovie(movieRepository.findById(showTimeDTO.getMovieId())
-                .orElseThrow(() -> new RuntimeException("Movie not found")));
+        showTime.setStatus(ShowTime.Status.COMING_SOON);
 
-        movieRepository.updateMovieStatus(showTimeDTO.getMovieId(), haui.doan.ticket_booking.model.Movie.Status.NOW_SHOWING);
+        Movie movie = movieRepository.findById(showTimeDTO.getMovieId())
+                .orElseThrow(() -> new RuntimeException("Movie not found"));
+        
+        showTime.setMovie(movie);
+        if(movie.getStatus() != Movie.Status.SPECIAL){
+            movieRepository.updateMovieStatus(showTimeDTO.getMovieId(), Movie.Status.NOW_SHOWING);
+        }
 
         showTime.setHall(hallRepository.findById(showTimeDTO.getHallId())
                 .orElseThrow(() -> new RuntimeException("Hall not found")));

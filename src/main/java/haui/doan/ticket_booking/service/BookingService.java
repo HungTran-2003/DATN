@@ -120,6 +120,7 @@ public class BookingService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         List<Booking> bookings = bookingRepository.findByUser(user);
+        bookings = sortBookings(bookings);
         List<BookingDTO> bookingDTOs = bookings.stream()
                 .map(BookingDTO::new)
                 .toList();
@@ -135,10 +136,12 @@ public class BookingService {
         return bookingRepository.save(booking);
     }    
     
+    @Transactional
     public void deleteBooking(Integer bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         bookingRepository.delete(booking);
+        System.out.println("đã xóa bookingId: " + bookingId);
     }
 
     public List<BookingDTO> findPaidBookingsWithUsedTickets(Integer userId) {
@@ -148,6 +151,48 @@ public class BookingService {
         return bookings.stream()
                 .map(BookingDTO::new)
                 .toList();
+    }
+
+    public List<BookingDTO> findBookingNotShowing(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        List<Booking> bookings = bookingRepository.findBookingNotShowing(user);
+        bookings = sortBookings(bookings);
+        return bookings.stream()
+                .map(BookingDTO::new)
+                .toList();
+    }
+
+    @Transactional
+    public void deleterac(){
+        List<ShowTime> showTimes = showTimeRepository.findAll();
+        List<Integer> ids = new ArrayList<>();
+        for(ShowTime showTime : showTimes){
+            if (showTime.getStatus() == ShowTime.Status.NOW_SHOWING || showTime.getStatus() == ShowTime.Status.FINISHED_SHOWING) {
+                List<Booking> bookings = showTime.getBookings();
+                for (Booking booking : bookings) {
+                    if (booking.getPaymentStatus() == Booking.PaymentStatus.PENDING) {
+                        deleteBooking(booking.getBookingId());
+                    }
+                }
+            }
+        }
+    }
+
+    private List<Booking> sortBookings(List<Booking> bookings) {
+        bookings.sort((b1, b2) -> {
+        // So sánh theo trạng thái thanh toán
+            boolean b1Paid = b1.getPaymentStatus() == Booking.PaymentStatus.PAID;
+            boolean b2Paid = b2.getPaymentStatus() == Booking.PaymentStatus.PAID;
+            if (b1Paid && !b2Paid) {
+                return -1;
+            } else if (!b1Paid && b2Paid) {
+                return 1;
+            } else {
+                return b1.getShowTime().getStartTime().compareTo(b2.getShowTime().getStartTime());
+            }
+            });
+        return bookings;
     }
     
 }

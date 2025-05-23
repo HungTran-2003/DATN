@@ -13,10 +13,14 @@ import haui.doan.ticket_booking.DTO.MovieReviewDTO;
 import haui.doan.ticket_booking.DTO.UserDTO;
 import haui.doan.ticket_booking.model.MovieRating;
 import haui.doan.ticket_booking.model.User;
+import haui.doan.ticket_booking.service.EmailService;
 import haui.doan.ticket_booking.service.MovieRatingService;
 import haui.doan.ticket_booking.service.user.UserService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 
 
@@ -30,6 +34,9 @@ public class UserController {
 
     @Autowired
     private MovieRatingService movieRatingService;
+
+    @Autowired
+    private EmailService emailService;
 
     @PostMapping("/add")
     public ResponseEntity<String> addUser(@RequestBody Map<String, String> body) {
@@ -105,6 +112,51 @@ public class UserController {
                 .body(Map.of("error", e.getMessage()));
         }
     }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<?> postMethodName(@RequestParam("userId") Integer userId,
+                                            @RequestParam("newPassword") String newPassword) {
+        try {
+            User user = userService.changePassword(userId, newPassword);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Thay đổi mật khẩu thất bại");
+            }
+            return ResponseEntity.ok("Thay đổi mật khẩu thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/comfirm-password")
+    public ResponseEntity<?> getMethodName(@RequestBody Map<String, Object> body) {
+        try {
+            String password = (String) body.get("password");
+            Integer userId = (Integer) body.get("userId");
+            Boolean comfirm = userService.comfirmPassword(userId, password);
+            if (!comfirm) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Mật khẩu không đúng");
+            }
+            return ResponseEntity.ok("Xác nhận thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/email")
+    public Integer getMethodName(@RequestParam String email) {
+        return userService.getUserbyEmail(email).getUserId();
+    }
+    
     
     
 }
