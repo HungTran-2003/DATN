@@ -9,6 +9,7 @@ import haui.doan.ticket_booking.model.Coupon;
 import haui.doan.ticket_booking.model.User;
 
 import java.util.Optional;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -39,4 +40,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Integer> {
     List<Map<String, Object>> findAvailableCouponsForUser(@Param("userId") Integer userId);
 
     Optional<Coupon> findByCode(String couponCode);
+
+    @Query("SELECT c FROM Coupon c WHERE c.status = 'ACTIVATE' " +
+           "AND c.expirationDate < :currentTime")
+    List<Coupon> getCouponInactivated(@Param("currentTime") Date currentTime);
 }

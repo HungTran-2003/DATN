@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import haui.doan.ticket_booking.DTO.BookingDTO;
 import haui.doan.ticket_booking.model.*;
+import haui.doan.ticket_booking.model.Booking.PaymentStatus;
 import haui.doan.ticket_booking.repository.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -47,9 +48,6 @@ public class BookingService {
                 .orElseThrow(() -> new RuntimeException("Showtime not found"));
 
         Coupon coupon = null;
-
-        System.out.println("hii");
-
         if (couponCode != null) {
             coupon = couponRepository.findByCode(couponCode)
                     .orElseThrow(() -> new RuntimeException("Coupon not found"));
@@ -57,14 +55,19 @@ public class BookingService {
             if (numberTicketUsed == coupon.getAmount()) {
                 new RuntimeException("Vé đã được sử dụng hết");
             }
+            if (coupon.getStatus() == Coupon.Status.INACTIVATE) {
+                new RuntimeException("Vé này đã hết hạn");
+            }
             UserCoupon userCoupon = new UserCoupon();
             userCoupon.setUser(user);
             userCoupon.setCoupon(coupon);
             userCoupon.setTimeUsed(LocalDateTime.now());    
             userCouponRepository.save(userCoupon);
+            if (numberTicketUsed+1 == coupon.getAmount()) {
+                coupon.setStatus(Coupon.Status.INACTIVATE);
+                couponRepository.save(coupon);
+            }
         }  
-        
-        System.out.println("hii1");
 
         // Create new booking
         Booking booking = new Booking();
@@ -167,20 +170,12 @@ public class BookingService {
     }
 
     @Transactional
-    public void deleterac(){
-        List<ShowTime> showTimes = showTimeRepository.findAll();
-        List<Integer> ids = new ArrayList<>();
-        for(ShowTime showTime : showTimes){
-            if (showTime.getStatus() == ShowTime.Status.NOW_SHOWING || showTime.getStatus() == ShowTime.Status.FINISHED_SHOWING) {
-                List<Booking> bookings = showTime.getBookings();
-                for (Booking booking : bookings) {
-                    if (booking.getPaymentStatus() == Booking.PaymentStatus.PENDING) {
-                        deleteBooking(booking.getBookingId());
-                    }
-                }
-            }
-        }
+    public void deteteBookings(List<Integer> ids){
+        bookingRepository.deleteAllById(ids);
+        System.out.println("đã xóa bookingId: " + ids.toString());
     }
+
+
 
     private List<Booking> sortBookings(List<Booking> bookings) {
         bookings.sort((b1, b2) -> {
@@ -198,4 +193,7 @@ public class BookingService {
         return bookings;
     }
     
+    public List<Booking> findBookingPending(){
+        return bookingRepository.findBookingPending(PaymentStatus.PENDING);
+    }
 }

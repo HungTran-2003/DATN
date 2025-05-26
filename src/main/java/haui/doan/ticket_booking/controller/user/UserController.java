@@ -10,16 +10,13 @@ import org.springframework.web.bind.annotation.*;
 
 import haui.doan.ticket_booking.model.Movie.Status;
 import haui.doan.ticket_booking.DTO.MovieReviewDTO;
+import haui.doan.ticket_booking.DTO.ReviewDetailDTO;
 import haui.doan.ticket_booking.DTO.UserDTO;
 import haui.doan.ticket_booking.model.MovieRating;
 import haui.doan.ticket_booking.model.User;
 import haui.doan.ticket_booking.service.EmailService;
 import haui.doan.ticket_booking.service.MovieRatingService;
 import haui.doan.ticket_booking.service.user.UserService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 
@@ -45,10 +42,18 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        String password = body.get("password");
-        return ResponseEntity.ok(userService.login(email, password));
+    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+        try{
+            String email = body.get("email");
+            String password = body.get("password");
+            return ResponseEntity.ok(userService.login(email, password));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("Lỗi", e.getMessage()));
+        }
     }
 
     @PostMapping("/favorite-movie")
@@ -72,11 +77,11 @@ public class UserController {
             String response = userService.removeFromFavorites(userId, movieId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("Lỗi", e.getMessage()));
         }
     }
     
@@ -90,11 +95,11 @@ public class UserController {
             }
             return ResponseEntity.ok("Thêm đánh giá thành công");
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi: ", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("Lỗi", e.getMessage()));
         }
 
     }
@@ -105,11 +110,11 @@ public class UserController {
             List<UserDTO> users = userService.getAllUserRole();
             return ResponseEntity.ok(users);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("Lỗi", e.getMessage()));
         }
     }
     
@@ -124,19 +129,19 @@ public class UserController {
             }
             return ResponseEntity.ok("Thay đổi mật khẩu thành công");
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("Lỗi", e.getMessage()));
         }
     }
 
     @GetMapping("/comfirm-password")
-    public ResponseEntity<?> comfirmPassword(@RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> comfirmPassword(@RequestParam("userId") Integer userId,
+                                            @RequestParam("password") String password) {
         try {
-            String password = (String) body.get("password");
-            Integer userId = (Integer) body.get("userId");
+        
             Boolean comfirm = userService.comfirmPassword(userId, password);
             if (!comfirm) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -144,11 +149,11 @@ public class UserController {
             }
             return ResponseEntity.ok("Xác nhận thành công");
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("Lỗi", e.getMessage()));
         }
     }
 
@@ -167,16 +172,16 @@ public class UserController {
             }
             return ResponseEntity.ok(reponsi);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("Lỗi", e.getMessage()));
         }
     }
 
     @PostMapping("/update-profile")
-    public ResponseEntity<?> getMethodName(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<?> updateProfile(@RequestBody UserDTO userDTO) {
         try {
             User reponsi = userService.updateProfile(userDTO);
             if (reponsi == null) {
@@ -185,14 +190,45 @@ public class UserController {
             }
             return ResponseEntity.ok("Cập nhật tài khoản thành công");
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("Lỗi", e.getMessage()));
         }
     }
     
+    @GetMapping("/getReview")
+    public ResponseEntity<?> getReviewDetail(@RequestParam("userId") Integer Integer,
+                                            @RequestParam("movieId") Integer movieId) {
+        try {
+            ReviewDetailDTO review = movieRatingService.getReview(Integer, movieId);
+            if (review == null) {
+                review = new ReviewDetailDTO();
+            }
+            return ResponseEntity.ok(review);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("Lỗi", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/update-review")
+    public ResponseEntity<?> updateReview(@RequestBody ReviewDetailDTO reviewDTO){
+        try {
+            ReviewDetailDTO review = movieRatingService.updateReview(reviewDTO);
+            return ResponseEntity.ok(review);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("Lỗi", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("Lỗi", e.getMessage()));
+        }
+    }
     
     
     

@@ -12,8 +12,8 @@ import org.springframework.stereotype.Repository;
 
 import haui.doan.ticket_booking.model.FavoriteMovie;
 import haui.doan.ticket_booking.model.Movie;
+import haui.doan.ticket_booking.model.User;
 import haui.doan.ticket_booking.model.Movie.Status;
-import jakarta.persistence.criteria.CriteriaBuilder.In;
 
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Integer> {
@@ -30,8 +30,8 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
     @Query("SELECT DISTINCT m FROM Movie m LEFT JOIN FETCH m.showTimes")
     List<Movie> findAllWithShowTimes();
 
-    @Query("SELECT m.movieId, m.posterUrl, m.name, m.duration, " +
-       "AVG(mr.ratingValue) AS avgRating, COUNT(mr.id) AS ratingCount, MAX(st.date) AS latestShowDate " +
+   @Query("SELECT m.movieId, m.posterUrl, m.name, m.duration, " +
+       "AVG(mr.ratingValue) AS avgRating, COUNT(DISTINCT mr.id) AS ratingCount, MAX(st.date) AS latestShowDate " +
        "FROM Movie m " +
        "LEFT JOIN MovieRating mr ON m.movieId = mr.movie.movieId " +
        "LEFT JOIN ShowTime st ON m.movieId = st.movie.movieId " +
@@ -64,5 +64,18 @@ public interface MovieRepository extends JpaRepository<Movie, Integer> {
            @Param("status") Status status,
            @Param("type") String type,
            @Param("genreIds") List<Integer> genreIds
-   );        
+   );      
+
+   @Query("SELECT u.userId, u.name, rt.ratingId, rt.ratingValue, cm.commentId, cm.commentText " +
+            "FROM Movie m " +
+            "JOIN m.ratings rt " +
+            "LEFT JOIN m.comments cm ON cm.user = rt.user AND cm.movie = m " +
+            "JOIN rt.user u " +
+            "WHERE m.movieId = :movieId")
+   List<Object[]> getReviewMovie(@Param("movieId") Integer movieId);
+
+   @Query("SELECT fr FROM FavoriteMovie fr " +
+       "WHERE fr.user = :user " +
+       "ORDER BY fr.addedDate")
+   List<FavoriteMovie> getMovieFavortive(@Param("user") User user);
 }

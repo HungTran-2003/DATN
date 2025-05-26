@@ -1,5 +1,7 @@
 package haui.doan.ticket_booking.controller;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.Map;
 
@@ -18,7 +20,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import haui.doan.ticket_booking.DTO.CreateLinkPaymentDTO;
+import haui.doan.ticket_booking.controller.user.BookingController;
 import haui.doan.ticket_booking.model.Booking;
+import haui.doan.ticket_booking.model.Payment;
+import haui.doan.ticket_booking.repository.PaymentRepository;
 import haui.doan.ticket_booking.service.BookingService;
 import vn.payos.PayOS;
 import vn.payos.type.CheckoutResponseData;
@@ -36,6 +41,12 @@ public class PaymentContronller {
 
     @Autowired
     private BookingService bookingService;
+
+    @Autowired
+    private BookingController bookingController;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     public PaymentContronller(PayOS payOS) {
         super();
@@ -72,7 +83,7 @@ public class PaymentContronller {
         } catch (Exception e) {
             e.printStackTrace();
             response.put("error", -1);
-            response.put("message", "fail");
+            response.put("message", e.toString());
             response.set("data", null);
             return response;
 
@@ -107,6 +118,8 @@ public class PaymentContronller {
         ObjectNode response = objectMapper.createObjectNode();
         try {
             PaymentLinkData order = payOS.cancelPaymentLink(orderId, null);
+            bookingService.deleteBooking(orderId);
+            bookingController.getBookingPending().remove(Integer.valueOf(orderId));
             response.set("data", objectMapper.valueToTree(order));
             response.put("error", 0);
             response.put("message", "ok");
@@ -142,7 +155,6 @@ public class PaymentContronller {
     @PostMapping(path = "/payos_transfer_handler")
     public ObjectNode payosTransferHandler(@RequestBody ObjectNode body)
         throws JsonProcessingException, IllegalArgumentException {
-
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode response = objectMapper.createObjectNode();
         Webhook webhookBody = objectMapper.treeToValue(body, Webhook.class);
@@ -154,7 +166,25 @@ public class PaymentContronller {
             response.set("data", null);
 
             WebhookData data = payOS.verifyPaymentWebhookData(webhookBody);
-            System.out.println(data);
+            Long bookingId = data.getOrderCode();
+            String status = data.getDesc();
+            if (status.equals("success")) {
+                Booking booking = bookingService.getBookingById(bookingId.intValue());
+                booking.setPaymentStatus(Booking.PaymentStatus.PAID);
+                bookingService.updateBooking(booking);
+
+                Payment payment = new Payment();
+                payment.setAmount(BigDecimal.valueOf(data.getAmount()));
+                payment.setBooking(booking);
+                payment.setPaymentMethod("PayOs");
+                payment.setPaymentStatus(Payment.PaymentStatus.PAID);
+                payment.setPaymentTime(new Timestamp(System.currentTimeMillis()));
+                payment.setTransactionId(data.getReference());
+
+                paymentRepository.save(payment);
+
+                bookingController.getBookingPending().remove(Integer.valueOf(booking.getBookingId()));
+            }
             return response;
         } catch (Exception e) {
             e.printStackTrace();
@@ -163,32 +193,6 @@ public class PaymentContronller {
             response.set("data", null);
             return response;
         }
-    }
-
-    @PostMapping("/receive-hook")
-    public ResponseEntity<Map<String, Object>> receiveWebhook(@RequestBody Map<String, Object> requestBody) {
-        System.out.println("Received webhook: " + requestBody);
-        Map<String, Object> data = (Map<String, Object>) requestBody.get("data");
-        String desc = (String) requestBody.get("desc");
-        int orderCode = (Integer) data.get("orderCode");
-        String code = (String) requestBody.get("code");
-        System.out.println(code);
-        if (code.equals("00")) {
-            return ResponseEntity.ok(Map.of("message", "Webhook processed successfully"));
-        }
-        Booking booking = bookingService.getBookingById(orderCode);
-        if (booking == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
-        }
-        if (desc.equals("success")) {
-            booking.setPaymentStatus(Booking.PaymentStatus.PAID);
-            bookingService.updateBooking(booking);
-            System.out.println("Payment successful");
-        } else {
-            bookingService.deleteBooking(orderCode);
-            System.out.println("Booking deleted successfully");
-        }
-        return ResponseEntity.ok(Map.of("message", "Webhook processed successfully"));
     }
 
 }

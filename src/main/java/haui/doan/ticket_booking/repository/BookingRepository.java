@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import haui.doan.ticket_booking.model.Booking;
 import haui.doan.ticket_booking.model.User;
+import haui.doan.ticket_booking.model.Booking.PaymentStatus;
 
 import java.util.List;
 
@@ -38,4 +39,6 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
            "WHERE st.endTime > CURRENT_DATE AND b.user = :user ")
     List<Booking> findBookingNotShowing(User user);       
 
+    @Query("SELECT b FROM Booking b WHERE b.paymentStatus = :status")
+    List<Booking> findBookingPending(@Param("status") PaymentStatus status);
 }

@@ -2,14 +2,10 @@ package haui.doan.ticket_booking.controller;
 
 import haui.doan.ticket_booking.DTO.MovieDTO;
 import haui.doan.ticket_booking.model.Genre;
-import haui.doan.ticket_booking.model.Movie;
 import haui.doan.ticket_booking.model.Movie.Status;
 import haui.doan.ticket_booking.service.MovieService;
-import jakarta.persistence.criteria.CriteriaBuilder.In;
 
-import org.hibernate.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.HashMap;
-import java.util.stream.Collectors;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 
@@ -60,7 +57,7 @@ public class MovieController {
 
     @GetMapping("/search")
     public ResponseEntity<?> searchMovies(@RequestParam String searchText) {
-         try {
+        try {
             List<Map<String, Object>> movies = movieService.searchMovies(searchText);
             return ResponseEntity.ok(movies);
         } catch (IllegalArgumentException e) {
@@ -71,7 +68,7 @@ public class MovieController {
                 .body(e.getMessage());
         }
     }
-
+    
     @GetMapping("/showing")
     public ResponseEntity<?> getMovieShowing() {
         try {
@@ -198,5 +195,17 @@ public class MovieController {
         return movieService.testFavorite(movieId);
     }
 
-    
+    @GetMapping("/getMovieFr/{userId}")
+    public ResponseEntity<?> getMovieFr(@PathVariable Integer userId ) {
+        try {
+            List<Map<String, Object>> movies = movieService.getMovieFr(userId);
+            return ResponseEntity.ok(movies);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(e.getMessage());
+        }
+    }
 }

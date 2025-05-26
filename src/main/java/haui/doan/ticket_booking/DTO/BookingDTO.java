@@ -16,6 +16,7 @@ public class BookingDTO {
     private Integer bookingId;
     private Integer userId;
     private Integer showtimeId;
+    private Integer movieId;
     private String startTime;
     private String endTime;
     private String movieName;
@@ -31,6 +32,7 @@ public class BookingDTO {
         this.bookingId = booking.getBookingId();
         this.userId = booking.getUser().getUserId();
         this.showtimeId = booking.getShowTime().getId();
+        this.movieId = booking.getShowTime().getMovie().getMovieId();
         this.startTime = booking.getShowTime().getStartTime().toString();
         this.endTime = booking.getShowTime().getEndTime().toString();
         this.movieName = booking.getShowTime().getMovie().getName();
@@ -55,13 +57,4 @@ class SeatDTO {
         this.seatId = ticket.getSeat().getSeatId();
         this.seatName = ticket.getSeat().getRowNumbers() + ticket.getSeat().getSeatNumbers();
     }
-}
-
-@Getter
-@Setter
-class BookingCreateDTO {
-    private Integer userId;
-    private Integer showtimeId;
-    private List<Integer> seatIds;
-    private BigDecimal totalPrice;
 }

@@ -1,24 +1,35 @@
 package haui.doan.ticket_booking.service;
 
 import haui.doan.ticket_booking.model.ShowTime;
+import haui.doan.ticket_booking.controller.user.BookingController;
 import haui.doan.ticket_booking.model.Booking;
+import haui.doan.ticket_booking.model.Coupon;
 import haui.doan.ticket_booking.model.Movie;
 import haui.doan.ticket_booking.model.Ticket;
 import haui.doan.ticket_booking.repository.ShowTimeRepository;
 import haui.doan.ticket_booking.repository.BookingRepository;
+import haui.doan.ticket_booking.repository.CouponRepository;
 import haui.doan.ticket_booking.repository.MovieRepository;
 import haui.doan.ticket_booking.repository.TicketRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 
 @Service
-public class ScheduledStatusUpdateService {
+public class ScheduledUpdateService {
 
     @Autowired
     private ShowTimeRepository showTimeRepository;
@@ -31,6 +42,13 @@ public class ScheduledStatusUpdateService {
     
     @Autowired
     private BookingRepository bookingRepository;
+
+    @Autowired
+    private BookingController bookingController;
+
+    @Autowired
+    private CouponRepository couponRepository;
+
 
     @PostConstruct
     @Transactional
@@ -61,6 +79,16 @@ public class ScheduledStatusUpdateService {
                 }
             }
         }
+
+        // Update Coupon Status
+        List<Coupon> expiredCoupons = couponRepository.getCouponInactivated(currentTime);
+        for(Coupon coupon : expiredCoupons){
+            coupon.setStatus(Coupon.Status.INACTIVATE);
+        }
+        if (!expiredCoupons.isEmpty()) {
+            couponRepository.saveAll(expiredCoupons);
+        }
+
     }
 
     @Scheduled(fixedRate = 300000) // Runs every 5 minutes
@@ -110,4 +138,56 @@ public class ScheduledStatusUpdateService {
             }
         }
     }
+
+    @Scheduled(fixedRate = 330000)
+    public void checkPaymentPendingTask(){
+        final Map<Integer, LocalDateTime> bookingPending = bookingController.getBookingPending();
+        if (bookingPending.isEmpty()) {
+            System.out.println("empty");
+            return;
+        } 
+        try {
+            List<Integer> ids = new ArrayList<>();
+            LocalDateTime current = LocalDateTime.now();
+            System.out.println(current);
+            LinkedHashMap<Integer, LocalDateTime> copy = new LinkedHashMap<>(bookingPending);
+            for(Integer key : copy.keySet()){
+                System.out.println(bookingPending.get(key));
+                System.out.println(ChronoUnit.MINUTES.between(bookingPending.get(key), current));
+                if (ChronoUnit.MINUTES.between(bookingPending.get(key), current) >= 5 ) {
+                    ids.add(key);
+                    System.out.println("sẽ xóa key " + key);
+                    bookingPending.remove(key);
+                } else {
+                    break;
+                }
+            }
+            if(!ids.isEmpty()){
+                deteteBookings(ids);
+                System.out.println("Removed: " + ids.toString());
+            } 
+        } catch (IllegalArgumentException e) {
+            System.err.println("Lỗi khi lập lịch: " + e.getMessage());
+        }
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    public void updateCouponStatus() {
+        Date currentTime = new Date();
+        List<Coupon> expiredCoupons = couponRepository.getCouponInactivated(currentTime);
+        for (Coupon coupon : expiredCoupons) {
+            coupon.setStatus(Coupon.Status.INACTIVATE);
+        }
+        if (!expiredCoupons.isEmpty()) {
+            couponRepository.saveAll(expiredCoupons);
+        }
+    }
+
+    @Transactional
+    public void deteteBookings(List<Integer> ids){
+        bookingRepository.deleteAllById(ids);
+        System.out.println("đã xóa bookingId: " + ids.toString());
+    }
+
+
 }

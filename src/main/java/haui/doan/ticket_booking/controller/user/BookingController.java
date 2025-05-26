@@ -1,6 +1,8 @@
 package haui.doan.ticket_booking.controller.user;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,15 +12,37 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import haui.doan.ticket_booking.model.Booking;
+import haui.doan.ticket_booking.repository.BookingRepository;
 import haui.doan.ticket_booking.service.BookingService;
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
 
+    private final BookingRepository bookingRepository;
+
+    public final Map<Integer, LocalDateTime> bookingPending = new LinkedHashMap<>();
+
     @Autowired
     private BookingService bookingService;
+
+    BookingController(BookingRepository bookingRepository) {
+        this.bookingRepository = bookingRepository;
+    }
+
+    @PostConstruct
+    public void init() {
+        List<Booking> bookings = bookingService.findBookingPending();
+        for(Booking booking : bookings){
+            bookingPending.put(booking.getBookingId(), booking.getBookingTime());
+        }
+    }
+
+    public Map<Integer, LocalDateTime> getBookingPending() {
+        return bookingPending;
+    }
 
     @Transactional
     @PostMapping("/create")
@@ -37,6 +61,7 @@ public class BookingController {
             );
             
             Map<String, String> bookingId = Map.of("bookingId", booking.getBookingId().toString());
+            bookingPending.put(booking.getBookingId(), booking.getBookingTime());
             return ResponseEntity.ok(bookingId);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -76,17 +101,6 @@ public class BookingController {
         }
     }
 
-    @DeleteMapping("/deleterac")
-    public ResponseEntity<?> deleterac() {
-        try {
-            bookingService.deleterac();
-            return ResponseEntity.ok("ok");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching bookings: " + e.getMessage());
-        }
-    } 
-
     @DeleteMapping("{bookingId}")
     public ResponseEntity<?> delete(@PathVariable Integer bookingId) {
         try {
@@ -97,5 +111,7 @@ public class BookingController {
                     .body("Error fetching bookings: " + e.getMessage());
         }
     } 
+
+    
 
 }

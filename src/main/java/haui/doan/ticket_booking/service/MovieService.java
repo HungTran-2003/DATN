@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Optional;
 
+import org.aspectj.apache.bcel.classfile.Module.Uses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,11 +25,13 @@ import haui.doan.ticket_booking.model.FavoriteMovie;
 import haui.doan.ticket_booking.model.Genre;
 import haui.doan.ticket_booking.model.Movie;
 import haui.doan.ticket_booking.model.Movie.Status;
+import haui.doan.ticket_booking.model.User;
 import haui.doan.ticket_booking.repository.ActorRepository;
 import haui.doan.ticket_booking.repository.DirectorRepository;
 import haui.doan.ticket_booking.repository.FavoriteMovieRep;
 import haui.doan.ticket_booking.repository.GenreRepository;
 import haui.doan.ticket_booking.repository.MovieRepository;
+import haui.doan.ticket_booking.repository.UserRepository;
 import jakarta.persistence.criteria.CriteriaBuilder.In;
 import jakarta.transaction.Transactional;
 
@@ -41,6 +44,7 @@ public class MovieService {
     private final GenreRepository genreRepository;
     private final ImageService imageService; 
     private final FavoriteMovieRep favoriteMovieRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public MovieService(
@@ -49,7 +53,8 @@ public class MovieService {
             ActorRepository actorRepository,
             DirectorRepository directorRepository,
             ImageService imageService,
-            FavoriteMovieRep favoriteMovieRepository
+            FavoriteMovieRep favoriteMovieRepository,
+            UserRepository userRepository
     ) {
         this.movieRepository = movieRepository;
         this.genreRepository = genreRepository;
@@ -57,6 +62,7 @@ public class MovieService {
         this.directorRepository = directorRepository;
         this.imageService = imageService; 
         this.favoriteMovieRepository = favoriteMovieRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -267,10 +273,23 @@ public class MovieService {
     public Optional<Map<String, Object>> getMoviesDetail(Integer movieId, Integer userId) {
         Optional<Movie> result = movieRepository.findById(movieId);
         List<Object[]> resultSt = movieRepository.getStatistics(movieId);
+        List<Object[]> reviews =movieRepository.getReviewMovie(movieId);
         Boolean favortive = false;
         if (userId != 0) {
             FavoriteMovie.FavoriteMovieId favoriteId = new FavoriteMovie.FavoriteMovieId(userId, movieId);
             favortive = favoriteMovieRepository.existsById(favoriteId);
+        }
+
+        List<Map<String, Object>> reviewsMap = new ArrayList<>();
+        for(Object[] review : reviews){
+            Map<String, Object> resultMap = new HashMap<>();
+            resultMap.put("userId", review[0]);
+            resultMap.put("name", review[1]);
+            resultMap.put("ratingId", review[2]);
+            resultMap.put("ratingValue", review[3]);
+            resultMap.put("commentId", review[4]);
+            resultMap.put("commentText", review[5]);
+            reviewsMap.add(resultMap);
         }
 
         Map<String, Object> response = new HashMap<>();
@@ -292,8 +311,10 @@ public class MovieService {
             response.put("totalFavorites", resultSt.get(0)[1] == null? 0 : resultSt.get(0)[1]);
             response.put("averageRating", resultSt.get(0)[0] == null? 0 : resultSt.get(0)[0]);
             response.put("favortive", favortive);
+            response.put("reviews", reviewsMap);
         }
         return Optional.of(response);
+
     }
    
     @Transactional
@@ -399,6 +420,30 @@ public class MovieService {
 
     public Long testFavorite(Integer movieId) {
         return movieRepository.testFavorite(movieId);
+    }
+
+    public List<Map<String, Object>> getMovieFr(Integer userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<FavoriteMovie> f = movieRepository.getMovieFavortive(user);
+        List<Movie> movies = f.stream()
+                                   .map(FavoriteMovie::getMovie)
+                                   .collect(Collectors.toList());
+        return movies.stream()
+            .map(movie -> {
+                System.out.println(movie.getMovieId());
+                Map<String, Object> movieMap = new HashMap<>();
+                movieMap.put("id", movie.getMovieId());
+                movieMap.put("name", movie.getName());
+                movieMap.put("posterUrl", movie.getPosterUrl());
+                movieMap.put("duration", movie.getDuration());
+                movieMap.put("status", movie.getStatus().name());
+                movieMap.put("averageRating", movieRepository.findAverageRatingByMovieId(movie.getMovieId())
+                    .orElse(BigDecimal.ZERO));
+                return movieMap;
+            })
+            .collect(Collectors.toList());
     }
 }
 
