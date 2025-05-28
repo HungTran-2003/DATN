@@ -89,8 +89,7 @@ public class CouponService {
                 Long usedCount = (Long) map.get("usedCount");
                 return convertToDTO(coupon, usedCount.intValue());
             })
-            .collect(Collectors.toList());
-            
+            .collect(Collectors.toList()); 
         return sortCoupons(dtos);
     }
 
@@ -153,4 +152,22 @@ public class CouponService {
         String uuid = UUID.randomUUID().toString().toUpperCase().replace("-", "");
         return "COUP-" + uuid.substring(0, 4) + "-" + uuid.substring(4, 8);
     }
+
+    public String updateCoupon(CouponDTO request){
+        Coupon coupon = couponRepository.findById(request.getCouponId())
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã giảm giá với ID: " + request.getCouponId()));
+
+        List<Cinema> cinemas = cinemaRepository.findAllById(request.getCinemaIds());
+        if (cinemas.size() != request.getCinemaIds().size()) {
+            throw new IllegalArgumentException("One or more cinema IDs are invalid");
+        }    
+        
+        coupon.setName(request.getName());
+        coupon.setExpirationDate(request.getExpirationDate());
+        coupon.setDescription(request.getDescription());
+        coupon.setAmount(request.getAmount());
+        coupon.setStatus(Coupon.Status.ACTIVATE);
+        coupon = couponRepository.save(coupon);
+        return "Cập nhật mã giảm giá " + coupon.getName() + " thành công";
+    } 
 }

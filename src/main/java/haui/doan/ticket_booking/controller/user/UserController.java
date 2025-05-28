@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import haui.doan.ticket_booking.model.Movie.Status;
 import haui.doan.ticket_booking.DTO.MovieReviewDTO;
 import haui.doan.ticket_booking.DTO.ReviewDetailDTO;
 import haui.doan.ticket_booking.DTO.UserDTO;

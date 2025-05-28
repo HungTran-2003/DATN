@@ -14,6 +14,8 @@ import haui.doan.ticket_booking.DTO.CouponDTO;
 import haui.doan.ticket_booking.service.CouponService;
 
 import java.util.List;
+import org.springframework.web.bind.annotation.PutMapping;
+
 
 @RestController
 @RequestMapping("/api/coupons")
@@ -65,6 +67,18 @@ public class CouponController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                 .body("Lỗi khi lấy danh sách mã giảm giá khả dụng: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<?> updateCoupon(@RequestBody CouponDTO request) {
+        try {
+            String result = couponService.updateCoupon(request);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error update coupon: " + e.getMessage());
         }
     }
 }

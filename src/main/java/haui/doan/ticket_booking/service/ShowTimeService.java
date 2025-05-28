@@ -155,7 +155,9 @@ public class ShowTimeService {
             map.put("duration", row[5]);
             map.put("ticketPrice", row[6]);
             map.put("movieId", row[7]);
-            map.put("bookingCount", row[8]);
+            map.put("bookingCount", row[10]);
+            map.put("hallId", row[8]);
+            map.put("cinemaName", row[9]);
 
             response.add(map);
         }

@@ -23,6 +23,7 @@ public interface ShowTimeRepository extends JpaRepository<ShowTime, Integer> {
     
     @Query("SELECT st.id, st.startTime, st.status, " +
        "m.name, m.posterUrl, m.duration, st.ticketPrice, m.movieId, " +
+       "st.hall.hallId, st.hall.cinema.name, " +
        "COUNT(t.id) " +
        "FROM ShowTime st " +
        "JOIN st.movie m " +
